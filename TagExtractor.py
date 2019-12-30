@@ -16,7 +16,8 @@ ModuleDefinitions = {
 
 def run(): 
 
-    ofile  = open('tagout.csv', "w", newline='')
+    ofile  = open('tagout.csv', "a", newline='')
+    parfile = open('parout.par', "w", newline='\n')
     writer = csv.writer(ofile)
 
     acad = win32com.client.Dispatch("AutoCAD.Application")
@@ -165,19 +166,26 @@ def run():
 
     writer.writerow(['TYPE', 'SCOPE', 'NAME', 'DESCRIPTION', 'DATATYPE', 'SPECIFIER', 'ATTRIBUTES'])
 
+    k = 1
+    parfile.write("#" + str(k) + "=" + C_pickModule.get() + "\n")
+    k += 1
+    parfile.write("#" + str(k) + "=" + "Status" + "\n")
+    k += 1
+    
     for i in range(0,31):
         if devices[i] != 0:
             print(devices[i])
             print(descriptions[i])
             print(alias[i])
             writer.writerow(['ALIAS', '', devices[i], descriptions[i], 'BOOL', alias[i], '(ExternalAccess := Read/Write)'])
-
+            parfile.write("#" + str(k) + "={::[PLC]" + alias[i] + "}\n")
+            k += 1
+            if (descriptions[i] == ''):
+                parfile.write("#" + str(k) + "=" + "SPARE\n")
+            else:
+                parfile.write("#" + str(k) + "=" + descriptions[i] + "\n")
+            k += 1
     ofile.close()
-
-
-
-
-
 
 top = Tk()
 top.title('ACADE -> Studio5000 Tag Data Extractor')
