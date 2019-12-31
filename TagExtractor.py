@@ -150,52 +150,52 @@ def run():
             #save the tag value to the devices list
             if ('X1TERM02' in comp):
                 if (wire != '202') & (wire !='200') & (wire != '') & (comp['X1TERM02'] == wire):
+                    if 'SIGCODE' in comp:
+                        if comp['SIGCODE'] != '':
+                            devices[idx] = comp['SIGCODE']                    
+                    if 'TAG2' in comp:
+                        if comp['TAG2'] != '':
+                            devices[idx] = comp['TAG2']
+                    if 'TAG1F' in comp:
+                        if comp['TAG1F'] != '':
+                            devices[idx] = comp['TAG1F']
                     if 'TAG1' in comp:
                         if comp['TAG1'] != '':
                             devices[idx] = comp['TAG1']
-                    elif 'TAG1F' in comp:
-                        if comp['TAG1F'] != '':
-                            devices[idx] = comp['TAG1F']
-                    elif 'TAG2' in comp:
-                        if comp['TAG2'] != '':
-                            devices[idx] = comp['TAG2']
-                    elif 'SIGCODE' in comp:
-                        if comp['SIGCODE'] != '':
-                            devices[idx] = comp['SIGCODE']
-                    else:
+                    if devices[idx] == '':
                         devices[idx] = 'tag not found'
             if ('WIRENO' in comp):
                 if (wire != '202') & (wire !='200') & (wire != '') & (comp['WIRENO'] == wire):
+                    if 'SIGCODE' in comp:
+                        if comp['SIGCODE'] != '':
+                            devices[idx] = comp['SIGCODE']                    
+                    if 'TAG2' in comp:
+                        if comp['TAG2'] != '':
+                            devices[idx] = comp['TAG2']
+                    if 'TAG1F' in comp:
+                        if comp['TAG1F'] != '':
+                            devices[idx] = comp['TAG1F']
                     if 'TAG1' in comp:
                         if comp['TAG1'] != '':
                             devices[idx] = comp['TAG1']
-                    elif 'TAG1F' in comp:
-                        if comp['TAG1F'] != '':
-                            devices[idx] = comp['TAG1F']
-                    elif 'TAG2' in comp:
-                        if comp['TAG2'] != '':
-                            devices[idx] = comp['TAG2']
-                    elif 'SIGCODE' in comp:
-                        if comp['SIGCODE'] != '':
-                            devices[idx] = comp['SIGCODE']
-                    else:
+                    if devices[idx] == '':
                         devices[idx] = 'tag not found'
 
             if ('X4TERM01' in comp):
                 if (wire != '202') & (wire !='200') & (wire != '') & (comp['X4TERM01'] == wire):
+                    if 'SIGCODE' in comp:
+                        if comp['SIGCODE'] != '':
+                            devices[idx] = comp['SIGCODE']                    
+                    if 'TAG2' in comp:
+                        if comp['TAG2'] != '':
+                            devices[idx] = comp['TAG2']
+                    if 'TAG1F' in comp:
+                        if comp['TAG1F'] != '':
+                            devices[idx] = comp['TAG1F']
                     if 'TAG1' in comp:
                         if comp['TAG1'] != '':
                             devices[idx] = comp['TAG1']
-                    elif 'TAG1F' in comp:
-                        if comp['TAG1F'] != '':
-                            devices[idx] = comp['TAG1F']
-                    elif 'TAG2' in comp:
-                        if comp['TAG2'] != '':
-                            devices[idx] = comp['TAG2']
-                    elif 'SIGCODE' in comp:
-                        if comp['SIGCODE'] != '':
-                            devices[idx] = comp['SIGCODE']
-                    else:
+                    if devices[idx] == '':
                         devices[idx] = 'tag not found'
 
     print(devices)
@@ -253,7 +253,7 @@ def run():
             if (descriptions[i] == ''):
                 parfile.write("#" + str(k) + "=" + "SPARE\n")
             else:
-                parfile.write("#" + str(k) + "=" + descriptions[i] + "\n")
+                parfile.write("#" + str(k) + "=" + descriptions[i] + "  (" + devices[i] + ")" + "\n")
             k += 1
             
     #close the files
@@ -263,9 +263,10 @@ def run():
     with open('parout.par','r') as file:
         filedata = file.read()
 
-    filedata = filedata.replace(' ',"\u00A0")
-    filedata = filedata.replace('\n',"\u000d\u000a")
+    filedata = filedata.replace(' ',"\u00A0")           #replace all spaces with no-break space unicode value
+    filedata = filedata.replace('\n',"\u000d\u000a")    #replace all newline characters with carriage return, line feed
 
+    #write as binary in utf-16 little endian (UCS-2 LE) with an explicit BOM
     with open('parout.par', 'wb') as file:
         file.write(codecs.BOM_UTF16_LE)
         file.write(filedata.encode('utf-16-le'))
