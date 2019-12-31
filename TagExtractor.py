@@ -3,6 +3,7 @@ import re
 import csv
 from tkinter import *
 from tkinter.ttk import *
+import codecs
 
 
 #Defines different I/O modules to search for
@@ -258,6 +259,16 @@ def run():
     #close the files
     ofile.close()
     parfile.close()
+
+    with open('parout.par','r') as file:
+        filedata = file.read()
+
+    filedata = filedata.replace(' ',"\u00A0")
+    filedata = filedata.replace('\n',"\u000d\u000a")
+
+    with open('parout.par', 'wb') as file:
+        file.write(codecs.BOM_UTF16_LE)
+        file.write(filedata.encode('utf-16-le'))
 
 
 #Tkinter GUI code
