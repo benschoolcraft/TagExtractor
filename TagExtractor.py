@@ -15,22 +15,35 @@ ModuleDefinitions = {
     '5069-IB16': 'PLCIO_5B719',
     '5069-OB16': 'PLCIO_5B2C5',
     'J-Block Inputs': 'PLCIO_59454',
-    'J-Block Outputs': 'PLCIO_5980A'
+    'J-Block Outputs': 'PLCIO_5980A',
+    'EX600-DXPD (Amazon)': 'PLCIO_5F24F',
+    'EX600_DYPB (Amazon)': 'PLCIO_6054F',
+    'EX600-DXPD (Covance)' : 'HDV1_008'
     }
 
 firstRun = 1;
-print(str(firstRun) + "Before Run")
 def run():
     global firstRun;
 
+    #get user input values from GUI
+    aliasPrefix = E_aliasPrefix.get()
+    slot = C_slot.get()
+    cardType = C_type.get()
+    indexPrefix = E_indexPrefix.get()
+    indexPostfix = E_indexPostfix.get()
+    
     #opens or creates output files for tags and parameters
     #user checkbox selects whether to append new tags to existing tagout or overwrite
     if (appendTags.get()):
         ofile  = open('tagout.csv', "a", newline='')
     else:
         ofile  = open('tagout.csv', "w", newline='')
-        
-    parfile = open('parout.par', "w", newline='\n')
+
+    parfilestr = aliasPrefix
+    parfilestr = re.sub('[^A-Za-z0-9]+', '', parfilestr)
+    parfilestr = parfilestr + '.par'
+    
+    parfile = open(parfilestr, "w", newline='\n')
     writer = csv.writer(ofile)
 
     #finds AutoCAD in windows if running
@@ -54,12 +67,6 @@ def run():
     ports = 16
     j=0
 
-    #get user input values from GUI
-    aliasPrefix = E_aliasPrefix.get()
-    slot = C_slot.get()
-    cardType = C_type.get()
-    indexPrefix = E_indexPrefix.get()
-    indexPostfix = E_indexPostfix.get()
 
     #iterate over all objects in the document
     for entity in acad.ActiveDocument.ModelSpace:
@@ -143,63 +150,6 @@ def run():
                 wires.append(port[wirestr])
     print(wires)
 
-    #for each of the found components that were not the module and were not filtered out
-    for comp in Components:
-        for idx,wire in enumerate(wires):
-            #if the wire number from the module port is also on a terminal of the component and is also not 200 or 202
-            #save the tag value to the devices list
-            if ('X1TERM02' in comp):
-                if (wire != '202') & (wire !='200') & (wire != '') & (comp['X1TERM02'] == wire):
-                    if 'SIGCODE' in comp:
-                        if comp['SIGCODE'] != '':
-                            devices[idx] = comp['SIGCODE']                    
-                    if 'TAG2' in comp:
-                        if comp['TAG2'] != '':
-                            devices[idx] = comp['TAG2']
-                    if 'TAG1F' in comp:
-                        if comp['TAG1F'] != '':
-                            devices[idx] = comp['TAG1F']
-                    if 'TAG1' in comp:
-                        if comp['TAG1'] != '':
-                            devices[idx] = comp['TAG1']
-                    if devices[idx] == '':
-                        devices[idx] = 'tag not found'
-            if ('WIRENO' in comp):
-                if (wire != '202') & (wire !='200') & (wire != '') & (comp['WIRENO'] == wire):
-                    if 'SIGCODE' in comp:
-                        if comp['SIGCODE'] != '':
-                            devices[idx] = comp['SIGCODE']                    
-                    if 'TAG2' in comp:
-                        if comp['TAG2'] != '':
-                            devices[idx] = comp['TAG2']
-                    if 'TAG1F' in comp:
-                        if comp['TAG1F'] != '':
-                            devices[idx] = comp['TAG1F']
-                    if 'TAG1' in comp:
-                        if comp['TAG1'] != '':
-                            devices[idx] = comp['TAG1']
-                    if devices[idx] == '':
-                        devices[idx] = 'tag not found'
-
-            if ('X4TERM01' in comp):
-                if (wire != '202') & (wire !='200') & (wire != '') & (comp['X4TERM01'] == wire):
-                    if 'SIGCODE' in comp:
-                        if comp['SIGCODE'] != '':
-                            devices[idx] = comp['SIGCODE']                    
-                    if 'TAG2' in comp:
-                        if comp['TAG2'] != '':
-                            devices[idx] = comp['TAG2']
-                    if 'TAG1F' in comp:
-                        if comp['TAG1F'] != '':
-                            devices[idx] = comp['TAG1F']
-                    if 'TAG1' in comp:
-                        if comp['TAG1'] != '':
-                            devices[idx] = comp['TAG1']
-                    if devices[idx] == '':
-                        devices[idx] = 'tag not found'
-
-    print(devices)
-
     #for all 32 ports, save description values
     for idx in range(0, 31):
         if (idx + offset) < 9:
@@ -212,6 +162,34 @@ def run():
             descriptions[idx] = 'description not found'
 
     print(descriptions)
+
+    #for each of the found components that were not the module and were not filtered out
+    for comp in Components:
+        for idx,wire in enumerate(wires):
+            #if the wire number from the module port is also on a terminal of the component and is also not 200 or 202
+            #save the tag value to the devices list
+            if ('X1TERM02' in comp):
+                if (wire != '202') & (wire !='200') & (wire != '') & (comp['X1TERM02'] == wire):
+                    devices[idx] = findComponentName(comp)
+                    if (devices[idx] != 'tag not found'):
+                        if ((descriptions[idx] == 'description not found') | (descriptions[idx] == '')):
+                            if ('DESC1' in comp):
+                                descriptions[idx] = comp['DESC1']
+            if ('WIRENO' in comp):
+                if (wire != '202') & (wire !='200') & (wire != '') & (comp['WIRENO'] == wire):
+                    devices[idx] = findComponentName(comp)
+                    if ((descriptions[idx] == 'description not found') | (descriptions[idx] == '')):
+                        if ('DESC1' in comp):
+                            descriptions[idx] = comp['DESC1']
+
+            if ('X4TERM01' in comp):
+                if (wire != '202') & (wire !='200') & (wire != '') & (comp['X4TERM01'] == wire):
+                    devices[idx] = findComponentName(comp)
+                    if ((descriptions[idx] == 'description not found') | (descriptions[idx] == '')):
+                        if ('DESC1' in comp):
+                            descriptions[idx] = comp['DESC1']
+                
+    print(devices)
 
     #set the alias names according to the user input values
     for i in range(0,32):
@@ -238,38 +216,57 @@ def run():
 
     #final write-to-file stage
     for i in range(0,31):
-        if devices[i] != 0:
-            print(devices[i])
-            print(descriptions[i])
-            print(alias[i])
+        print(devices[i])
+        print(descriptions[i])
+        print(alias[i])
 
+        if devices[i] != 0:
             #write all the information to the csv file for each tag
             writer.writerow(['ALIAS', '', devices[i], descriptions[i], 'BOOL', alias[i], '(ExternalAccess := Read/Write)'])
-            #write the PLC tag for each parameter
-            parfile.write("#" + str(k) + "={::[PLC]" + alias[i] + "}\n")
-            k += 1
+        #write the PLC tag for each parameter
+        parfile.write("#" + str(k) + "={::[PLC]" + alias[i] + "}\n")
+        k += 1
 
-            #write the description for each parameter
-            if (descriptions[i] == ''):
-                parfile.write("#" + str(k) + "=" + "SPARE\n")
-            else:
-                parfile.write("#" + str(k) + "=" + descriptions[i] + "  (" + devices[i] + ")" + "\n")
-            k += 1
+        #write the description for each parameter
+        if (descriptions[i] == ''):
+            parfile.write("#" + str(k) + "=" + "SPARE\n")
+        else:
+            parfile.write("#" + str(k) + "=" + descriptions[i] + "  (" + str(devices[i]) + ")" + "\n")
+        k += 1
             
     #close the files
     ofile.close()
     parfile.close()
 
-    with open('parout.par','r') as file:
+    with open(parfilestr,'r') as file:
         filedata = file.read()
 
     filedata = filedata.replace(' ',"\u00A0")           #replace all spaces with no-break space unicode value
     filedata = filedata.replace('\n',"\u000d\u000a")    #replace all newline characters with carriage return, line feed
 
     #write as binary in utf-16 little endian (UCS-2 LE) with an explicit BOM
-    with open('parout.par', 'wb') as file:
+    with open(parfilestr, 'wb') as file:
         file.write(codecs.BOM_UTF16_LE)
         file.write(filedata.encode('utf-16-le'))
+
+
+def findComponentName(comp):
+        if 'SIGCODE' in comp:
+            if comp['SIGCODE'] != '':
+                deviceName = comp['SIGCODE']                    
+        if 'TAG2' in comp:
+            if comp['TAG2'] != '':
+                deviceName = comp['TAG2']
+        if 'TAG1F' in comp:
+            if comp['TAG1F'] != '':
+                deviceName = comp['TAG1F']
+        if 'TAG1' in comp:
+            if comp['TAG1'] != '':
+                deviceName = comp['TAG1']
+        if deviceName == '':
+            deviceName = 'tag not found'
+        return deviceName
+
 
 
 #Tkinter GUI code
@@ -281,7 +278,7 @@ padzero = BooleanVar()
 appendTags = BooleanVar()
 
 C_pickModule = Combobox(top)
-C_pickModule['values']= ('1769-IQ16', '1769-OB16', '5069-IB16', '5069-OB16', 'J-Block Inputs','J-Block Outputs')
+C_pickModule['values'] = list(ModuleDefinitions.keys())
 C_pickModule.current(0)
 C_pickModule.grid(column=1, row=0)
 
